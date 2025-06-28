@@ -2,8 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
-def fetch_premier_league_goals(season_id=489):
-    url = f"https://www.premierleague.com/stats/top/players/goals?se={season_id}/1/1/"
+def fetch_premier_league_goals(season_id=719):
+    url = f"https://www.premierleague.com/stats/top/players/goals?se={season_id}"
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     }

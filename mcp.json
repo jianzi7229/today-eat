@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+      "food-recommendation-server": {
+        "command": "python3",
+        "args": ["mcp_server.py"],
+        "env": {
+          "PYTHONPATH": "."
+        }
+      }
+    }
+  }
+  
