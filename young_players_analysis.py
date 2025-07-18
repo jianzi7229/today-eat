@@ -8,10 +8,13 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from datetime import datetime
 import json
+import logging
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
 def get_young_players_data():
-    """获取年轻球员数据"""
-    
+    """
+    获取英超年轻球员数据，结构统一，便于扩展。
+    """
     # 定义年轻球员（25岁以下）的数据库
     young_players = {
         "Cole Palmer": {
@@ -149,34 +152,32 @@ def get_young_players_data():
     return young_players
 
 def analyze_young_players():
-    """分析年轻球员潜力"""
+    """
+    分析年轻球员潜力，输出表格化文本。
+    """
     players = get_young_players_data()
-    
-    print("🔍 英超年轻球员潜力分析报告")
-    print("=" * 80)
-    print(f"📅 分析时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("🎯 分析标准: 25岁以下球员，重点关注进球和助攻数据")
-    print()
+    logging.info("🔍 英超年轻球员潜力分析报告")
+    logging.info("=" * 80)
+    logging.info(f"📅 分析时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logging.info("🎯 分析标准: 25岁以下球员，重点关注进球和助攻数据")
+    logging.info()
     
     # 按潜力排序
     sorted_players = sorted(players.items(), 
                           key=lambda x: (x[1]['goals'] + x[1]['assists'], x[1]['age']), 
                           reverse=True)
     
-    print("🏆 潜力排行榜 (按进球+助攻数据排序)")
-    print("-" * 80)
+    logging.info("🏆 潜力排行榜 (按进球+助攻数据排序)")
+    logging.info("-" * 80)
     
-    for i, (name, data) in enumerate(sorted_players, 1):
+    # 表格化输出
+    header = f"{'球员':<20}{'年龄':<6}{'球队':<20}{'进球':<6}{'助攻':<6}{'潜力':<8}"
+    logging.info(header)
+    logging.info("-" * 60)
+    for name, data in sorted_players:
         total_contribution = data['goals'] + data['assists']
-        print(f"{i:2d}. {name:<20} ({data['age']}岁) - {data['team']}")
-        print(f"    📊 数据: {data['goals']}球 {data['assists']}助攻 (总计: {total_contribution})")
-        print(f"    ⭐ 潜力: {data['potential']}")
-        print(f"    🎯 位置: {data['position']}")
-        print(f"    💰 身价: {data['transfer_value']}")
-        print(f"    🌟 上限: {data['ceiling']}")
-        print(f"    ✅ 优势: {', '.join(data['strengths'])}")
-        print(f"    ⚠️  弱点: {', '.join(data['weaknesses'])}")
-        print()
+        row = f"{name:<20}{data['age']:<6}{data['team']:<20}{data['goals']:<6}{data['assists']:<6}{data['potential']:<8}"
+        logging.info(row)
     
     return sorted_players
 
@@ -184,8 +185,8 @@ def get_rising_stars():
     """识别冉冉升起的新星"""
     players = get_young_players_data()
     
-    print("🚀 冉冉升起的新星")
-    print("=" * 50)
+    logging.info("🚀 冉冉升起的新星")
+    logging.info("=" * 50)
     
     rising_stars = []
     for name, data in players.items():
@@ -195,18 +196,18 @@ def get_rising_stars():
     rising_stars.sort(key=lambda x: x[1]['age'])
     
     for name, data in rising_stars:
-        print(f"🌟 {name} ({data['age']}岁)")
-        print(f"   球队: {data['team']}")
-        print(f"   数据: {data['goals']}球 {data['assists']}助攻")
-        print(f"   潜力: {data['potential']}")
-        print()
+        logging.info(f"🌟 {name} ({data['age']}岁)")
+        logging.info(f"   球队: {data['team']}")
+        logging.info(f"   数据: {data['goals']}球 {data['assists']}助攻")
+        logging.info(f"   潜力: {data['potential']}")
+        logging.info()
 
 def get_position_analysis():
     """按位置分析"""
     players = get_young_players_data()
     
-    print("📊 位置分析")
-    print("=" * 50)
+    logging.info("📊 位置分析")
+    logging.info("=" * 50)
     
     positions = {}
     for name, data in players.items():
@@ -216,34 +217,34 @@ def get_position_analysis():
         positions[pos].append((name, data))
     
     for pos, player_list in positions.items():
-        print(f"\n🎯 {pos}位置:")
+        logging.info(f"\n🎯 {pos}位置:")
         for name, data in player_list:
             total = data['goals'] + data['assists']
-            print(f"   {name}: {data['goals']}球 {data['assists']}助攻 (总计: {total})")
+            logging.info(f"   {name}: {data['goals']}球 {data['assists']}助攻 (总计: {total})")
 
 def get_transfer_targets():
     """转会目标分析"""
     players = get_young_players_data()
     
-    print("\n💰 转会市场目标")
-    print("=" * 50)
+    logging.info("\n💰 转会市场目标")
+    logging.info("=" * 50)
     
     # 按身价排序
     transfer_targets = [(name, data) for name, data in players.items()]
     transfer_targets.sort(key=lambda x: int(x[1]['transfer_value'].replace('€', '').replace('M+', '000')), reverse=True)
     
     for name, data in transfer_targets[:5]:
-        print(f"💎 {name}")
-        print(f"   身价: {data['transfer_value']}")
-        print(f"   年龄: {data['age']}岁")
-        print(f"   数据: {data['goals']}球 {data['assists']}助攻")
-        print(f"   潜力: {data['potential']}")
-        print()
+        logging.info(f"💎 {name}")
+        logging.info(f"   身价: {data['transfer_value']}")
+        logging.info(f"   年龄: {data['age']}岁")
+        logging.info(f"   数据: {data['goals']}球 {data['assists']}助攻")
+        logging.info(f"   潜力: {data['potential']}")
+        logging.info()
 
 def generate_report():
     """生成完整报告"""
-    print("📋 英超年轻球员潜力分析完整报告")
-    print("=" * 80)
+    logging.info("📋 英超年轻球员潜力分析完整报告")
+    logging.info("=" * 80)
     
     # 1. 总体分析
     analyze_young_players()
@@ -258,19 +259,28 @@ def generate_report():
     get_transfer_targets()
     
     # 5. 总结
-    print("\n📝 总结与建议")
-    print("=" * 50)
-    print("🎯 重点关注球员:")
-    print("   1. Cole Palmer (22岁) - 切尔西中场新星")
-    print("   2. Bukayo Saka (23岁) - 阿森纳边锋核心")
-    print("   3. Alexander Isak (24岁) - 纽卡斯尔前锋")
-    print("   4. Phil Foden (24岁) - 曼城中场天才")
-    print()
-    print("💡 投资建议:")
-    print("   - 重点关注英格兰本土球员")
-    print("   - 技术型中场价值最高")
-    print("   - 25岁以下球员仍有上升空间")
-    print("   - 关注伤病情况和稳定性")
+    logging.info("\n📝 总结与建议")
+    logging.info("=" * 50)
+    logging.info("🎯 重点关注球员:")
+    logging.info("   1. Cole Palmer (22岁) - 切尔西中场新星")
+    logging.info("   2. Bukayo Saka (23岁) - 阿森纳边锋核心")
+    logging.info("   3. Alexander Isak (24岁) - 纽卡斯尔前锋")
+    logging.info("   4. Phil Foden (24岁) - 曼城中场天才")
+    logging.info()
+    logging.info("💡 投资建议:")
+    logging.info("   - 重点关注英格兰本土球员")
+    logging.info("   - 技术型中场价值最高")
+    logging.info("   - 25岁以下球员仍有上升空间")
+    logging.info("   - 关注伤病情况和稳定性")
+
+def test_analyze_young_players():
+    """
+    简单单元测试：检查输出和数据结构。
+    """
+    players = get_young_players_data()
+    assert isinstance(players, dict)
+    assert all('age' in v and 'team' in v for v in players.values())
+    logging.info("✅ 年轻球员数据结构测试通过")
 
 if __name__ == "__main__":
     generate_report() 

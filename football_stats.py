@@ -8,17 +8,22 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import time
 import random
+import logging
+import os
+import pickle
+
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
 def fetch_premier_league_goals_improved():
-    """获取英超进球数据的改进版本"""
-    
-    # 尝试多个可能的URL
-    urls = [
-        "https://www.premierleague.com/stats/top/players/goals",
-        "https://www.premierleague.com/stats/top/players/goals?se=719",
-        "https://www.premierleague.com/stats/top/players/goals?se=718"
-    ]
-    
+    """
+    获取英超进球数据，优先用本地缓存，其次抓取网页，失败用模拟数据。
+    """
+    cache_file = 'pl_goals_cache.pkl'
+    if os.path.exists(cache_file):
+        logging.info('从本地缓存加载英超数据...')
+        with open(cache_file, 'rb') as f:
+            return format_data(pickle.load(f))
+    url = "https://www.premierleague.com/stats/top/players/goals"
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
@@ -27,66 +32,39 @@ def fetch_premier_league_goals_improved():
         "Connection": "keep-alive",
         "Upgrade-Insecure-Requests": "1"
     }
-    
-    for url in urls:
+    try:
+        logging.info(f"尝试访问: {url}")
+        response = requests.get(url, headers=headers, timeout=5)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, "html.parser")
+        table_selectors = [
+            "table#tech_statistics_1",
+            "table.statsTable",
+            "table",
+            ".stats-table",
+            "#stats-table"
+        ]
+        players_table = None
+        for selector in table_selectors:
+            players_table = soup.select_one(selector)
+            if players_table:
+                logging.info(f"找到表格: {selector}")
+                break
+        if not players_table:
+            logging.warning("未找到标准表格，直接返回模拟数据")
+            return create_mock_data()
         try:
-            print(f"尝试访问: {url}")
-            response = requests.get(url, headers=headers, timeout=15)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, "html.parser")
-            
-            # 尝试多种可能的表格选择器
-            table_selectors = [
-                "table#tech_statistics_1",
-                "table.statsTable",
-                "table",
-                ".stats-table",
-                "#stats-table"
-            ]
-            
-            players_table = None
-            for selector in table_selectors:
-                players_table = soup.select_one(selector)
-                if players_table:
-                    print(f"找到表格: {selector}")
-                    break
-            
-            if not players_table:
-                # 尝试查找包含球员数据的任何元素
-                print("未找到标准表格，尝试查找球员数据...")
-                
-                # 查找可能包含球员信息的元素
-                player_elements = soup.find_all(['div', 'tr'], class_=lambda x: x and any(keyword in x.lower() for keyword in ['player', 'stats', 'goals', 'rank']))
-                
-                if player_elements:
-                    print(f"找到 {len(player_elements)} 个可能的球员数据元素")
-                    
-                    # 创建模拟数据
-                    return create_mock_data()
-                else:
-                    print("未找到球员数据元素")
-                    continue
-            
-            # 尝试解析表格
-            try:
-                players_df = pd.read_html(str(players_table))[0]
-                print("成功解析表格数据")
-                return format_data(players_df)
-            except Exception as e:
-                print(f"表格解析失败: {e}")
-                continue
-                
-        except requests.RequestException as e:
-            print(f"网络请求失败: {e}")
-            continue
+            players_df = pd.read_html(str(players_table))[0]
+            with open(cache_file, 'wb') as f:
+                pickle.dump(players_df, f)
+            logging.info("成功解析表格数据并已缓存")
+            return format_data(players_df)
         except Exception as e:
-            print(f"处理失败: {e}")
-            continue
-    
-    # 如果所有方法都失败，返回模拟数据
-    print("所有方法都失败，返回模拟数据")
-    return create_mock_data()
+            logging.warning(f"表格解析失败: {e}")
+            return create_mock_data()
+    except Exception as e:
+        logging.warning(f"网络或处理失败: {e}")
+        return create_mock_data()
 
 def create_mock_data():
     """创建模拟的英超进球数据"""

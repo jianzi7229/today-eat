@@ -9,6 +9,8 @@ import subprocess
 import os
 from typing import Dict, Any, List, Optional
 import importlib.util
+import logging
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
 # 导入食物推荐模块
 sys.path.append('.')
@@ -18,6 +20,19 @@ class MCPServer:
     def __init__(self):
         self.server_name = "food-recommendation-server"
         self.version = "1.0.0"
+        self.tools = {}
+        self.register_tools()
+        
+    def register_tools(self):
+        """注册所有工具，便于后续扩展"""
+        self.tools = {
+            "get_food_recommendation": self.get_food_recommendation,
+            "add_recent_food": self.add_recent_food,
+            "get_recent_foods": self.get_recent_foods,
+            "clear_recent_foods": self.clear_recent_foods,
+            "get_football_stats": self.get_football_stats,
+            "get_file_content": self.get_file_content
+        }
         
     def send_response(self, response: Dict[str, Any]):
         """发送响应到标准输出"""
@@ -40,13 +55,8 @@ class MCPServer:
             "id": request.get("id"),
             "result": {
                 "protocolVersion": "2024-11-05",
-                "capabilities": {
-                    "tools": {}
-                },
-                "serverInfo": {
-                    "name": self.server_name,
-                    "version": self.version
-                }
+                "capabilities": {"tools": {}},
+                "serverInfo": {"name": self.server_name, "version": self.version}
             }
         }
         
@@ -61,8 +71,8 @@ class MCPServer:
                     "properties": {
                         "weather": {
                             "type": "string",
-                            "enum": ["晴天", "雨天", "炎热", "寒冷"],
-                            "description": "当前天气类型"
+                            "enum": ["晴天", "阴天", "雨天", "炎热", "寒冷", "春季", "夏季", "秋季", "冬季"],
+                            "description": "当前天气类型或季节"
                         },
                         "budget": {
                             "type": "number",
@@ -141,52 +151,36 @@ class MCPServer:
         return {
             "jsonrpc": "2.0",
             "id": request.get("id"),
-            "result": {
-                "tools": tools
-            }
+            "result": {"tools": tools}
         }
         
     def handle_call_tool(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        """处理工具调用请求"""
+        """处理工具调用请求，增加参数校验和结构化错误"""
         params = request.get("params", {})
         name = params.get("name")
         arguments = params.get("arguments", {})
-        
+        logging.info(f"调用工具: {name} 参数: {arguments}")
         try:
-            if name == "get_food_recommendation":
-                result = self.get_food_recommendation(arguments)
-            elif name == "add_recent_food":
-                result = self.add_recent_food(arguments)
-            elif name == "get_recent_foods":
-                result = self.get_recent_foods()
-            elif name == "clear_recent_foods":
-                result = self.clear_recent_foods()
-            elif name == "get_football_stats":
-                result = self.get_football_stats(arguments)
-            elif name == "get_file_content":
-                result = self.get_file_content(arguments)
-            else:
+            if name not in self.tools:
                 raise ValueError(f"Unknown tool: {name}")
-                
+            # 参数校验（可扩展为更细致的schema校验）
+            if not isinstance(arguments, dict):
+                raise ValueError("参数必须为字典类型")
+            result = self.tools[name](arguments) if arguments else self.tools[name]()
             return {
                 "jsonrpc": "2.0",
                 "id": request.get("id"),
-                "result": {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": result
-                        }
-                    ]
-                }
+                "result": {"content": [{"type": "text", "text": result}]}
             }
         except Exception as e:
+            logging.warning(f"工具调用异常: {e}")
             return {
                 "jsonrpc": "2.0",
                 "id": request.get("id"),
                 "error": {
                     "code": -32603,
-                    "message": str(e)
+                    "message": str(e),
+                    "data": {"tool": name, "arguments": arguments}
                 }
             }
     

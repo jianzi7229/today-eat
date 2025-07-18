@@ -6,10 +6,13 @@
 
 from datetime import datetime
 import json
+import logging
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 
 def analyze_rookie_players():
-    """分析英超新秀球员"""
-    
+    """
+    分析英超新秀球员，返回统一结构。
+    """
     # 基于真实观察的新秀球员数据
     rookie_players = [
         {
@@ -209,12 +212,19 @@ def analyze_rookie_players():
     return rookie_players
 
 def generate_rookie_report():
-    """生成新秀球员推荐报告"""
+    """
+    生成新秀球员推荐报告，表格化输出。
+    """
     players = analyze_rookie_players()
+    logging.info("🌟 英超联赛新秀球员推荐报告")
+    logging.info("=" * 80)
+    header = f"{'球员':<20}{'球队':<15}{'年龄':<6}{'位置':<10}{'潜力':<8}"
+    logging.info(header)
+    logging.info("-" * 60)
+    for p in players:
+        logging.info(f"{p['name']:<20}{p['team']:<15}{p['age']:<6}{p['position']:<10}{p['potential']:<8}")
     
-    print("🌟 英超联赛新秀球员推荐报告")
-    print("=" * 80)
-    print(f"📅 分析时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("📅 分析时间: " + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     print("🎯 基于真实观察和数据分析")
     print("⚠️  注意：市场价值为估计值，仅供参考")
     print()
@@ -318,6 +328,15 @@ def generate_rookie_report():
     print("• 性价比新秀: 适合中小球队，即战力强")
     print("• 建议关注球员的适应能力和稳定性")
     print("• 市场价值会随表现波动，需要持续观察")
+
+def test_analyze_rookie_players():
+    """
+    简单单元测试：检查输出和数据结构。
+    """
+    players = analyze_rookie_players()
+    assert isinstance(players, list)
+    assert all('name' in p and 'team' in p for p in players)
+    logging.info("✅ 新秀球员数据结构测试通过")
 
 if __name__ == "__main__":
     generate_rookie_report() 
